@@ -2,29 +2,109 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <time.h>
+#include <stdio.h>
+#include <string.h>
 
-unsigned long calculate_checksum(FILE *file) {
+unsigned long calculate_checksum(unsigned char* data, size_t size) {
 	unsigned long checksum = 0;
-	while (!feof(file) && !ferror(file)) {
-		checksum += fgetc(file);
-	}
+
+	size_t pos;
+	for(pos=0;pos<size;pos++)
+		checksum += data[pos];
+
 	return checksum;
 }
 
-void load_original_resources() {
+struct Graphics
+{
+	SDL_Surface* SkierFront;
+};
+
+
+SDL_Surface* load_exe_bitmap(unsigned char* data, size_t address, int width, int height, int bbp, bool reversed)
+{
+	if (bbp != 4)
+		return NULL; // Not supported
+
+
+	// For some reason palette + pixels are offsetted by 40 bytes?
+	data += address + 40;
+
+	SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32, 0xFF0000, 0xFF00, 0xFF, 0);
+
+	SDL_LockSurface(surface);
+
+	for (int x = 0; x < width; x++)
+	{
+		for (int y = 0; y < height; y++)
+		{
+			int stride = (width * 4) / 8;
+
+			// Find pixel
+			int index = data[64 + ((reversed ? height - (y + 1) : y)) * stride + x / 2];
+
+			// Extract nibble
+			if (x % 2 == 0)
+				index = (index >> 4) & 0xF;
+			else
+				index &= 0xF;
+
+			// Color lookup
+			unsigned int color = ((unsigned int*)data)[index];
+
+			// Set color in surface (format in palette matches format set in SDL_CreateRGBSurface masks)
+			((unsigned int*)surface->pixels)[surface->pitch / 4 * y + x] = color;
+		}
+	}
+
+	SDL_UnlockSurface(surface);
+
+	return surface;
+}
+
+bool load_original_resources(struct Graphics* graphics) {
+	bool result = false;
+	unsigned char* data = NULL;
 	FILE *exe = fopen("ski32.exe", "rb");
 	if (!exe) {
 		puts("ski32.exe not found, unable to load original resources");
-		return;
+		goto cleanup;
 	}
 
-	if (calculate_checksum(exe) != 13084843) {
+	// Get file size
+	fseek(exe, 0L, SEEK_END);
+	size_t file_size = ftell(exe);
+	rewind(exe);
+
+	// Empty file? Bail.
+	if (!file_size)
+		goto cleanup;
+
+	data = (unsigned char*)malloc(file_size);
+
+	fread(data, 1, file_size, exe);
+
+	if (calculate_checksum(data,file_size) != 13084844L) {
 		puts("Incorrect checksum for ski32.exe. Make sure you have the original 32-bit binary created 2005.");
+		goto cleanup;
 	}
 
+	graphics->SkierFront = load_exe_bitmap(data, 0xE330, 16, 32, 4, true);
+
+	result = true;
+
+cleanup:
 	// Load image files here
-	
-	fclose(exe);
+	if (exe)
+		fclose(exe);
+	if (data)
+		free(data);
+	return result;
+}
+
+void cleanup_graphics(struct Graphics* graphics)
+{
+	SDL_FreeSurface(graphics->SkierFront);
 }
 
 typedef struct {
@@ -132,16 +212,19 @@ int main(int argc, char **argv) {
 		exit (1);
 	}
 
+	struct Graphics graphics;
+	memset(&graphics, 0, sizeof(graphics));
+
 	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+	load_original_resources(&graphics);
 
 	struct game_object skier;
 	skier.position.x = 0;
 	skier.position.y = 0;
 	skier.next = NULL;
-	skier.image = SDL_CreateRGBSurfaceWithFormat(0, 16, 32, window_surface->format->BytesPerPixel, window_surface->format->format);
+	skier.image = graphics.SkierFront;
 
-	// Just fill skier with red for now
-	SDL_FillRect(skier.image, NULL, 0xFFFF0000);
 
 	struct game_state state = {.skier = &skier};
 
@@ -164,7 +247,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
- quit:
+quit:
+	cleanup_graphics(&graphics);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
