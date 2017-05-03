@@ -50,7 +50,7 @@ SDL_Surface *extract_bitmap(unsigned char *data, size_t address, int width, int 
 	return surface;
 }
 
-struct graphics *load_original_resources(char *path) {
+struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
 	struct graphics *graphics = NULL;
 	unsigned char *data = NULL;
 	FILE *exe = fopen(path, "rb");
@@ -78,7 +78,10 @@ struct graphics *load_original_resources(char *path) {
 	}
 
 	graphics = malloc(sizeof(struct graphics));
-	graphics->skier_front = extract_bitmap(data, 0xE330, 16, 32, 4, true);
+
+	SDL_Surface *skier_front = extract_bitmap(data, 0xE330, 16, 32, 4, true);
+	graphics->skier_front = SDL_CreateTextureFromSurface(renderer, skier_front);
+	SDL_FreeSurface(skier_front);
 	
 cleanup:
 	if (exe)
@@ -89,5 +92,5 @@ cleanup:
 }
 
 void cleanup_graphics(struct graphics *graphics) {
-	SDL_FreeSurface(graphics->skier_front);
+	SDL_DestroyTexture(graphics->skier_front);
 }

@@ -24,7 +24,7 @@ vec2 vec2_subtract(vec2 a, vec2 b) {
 }
 
 struct game_object {
-	SDL_Surface *image;
+	SDL_Texture *texture;
 	vec2 position;
 	vec2 velocity;
 	struct game_object *next;
@@ -80,21 +80,25 @@ bool update(struct game_state *state) {
 	return true;
 }
 
-void draw(SDL_Window *window, struct game_state *state) {
-	SDL_Surface *surface = SDL_GetWindowSurface(window);
-	SDL_FillRect(surface, NULL, 0xFFFFFFFF);
- 
-	vec2 camera = {.x = surface->w / 2.0, .y = surface->h / 2.0};
+void draw(SDL_Renderer *renderer, struct game_state *state) {
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderClear(renderer);
+
+	int width, height;
+	SDL_RenderGetLogicalSize(renderer, &width, &height);
+
+	vec2 camera = {.x = (float)width / 2.0, .y = (float)height / 2.0};
 	
-	// Center camera above skier
+	// Put center of camera above skier
 	camera = vec2_subtract(state->skier->position, camera);
 	
 	for (struct game_object *object = state->skier; object != NULL; object = object->next) {
-		SDL_Rect target_rect = {.x = object->position.x - camera.x, .y = object->position.y - camera.y};
-		SDL_BlitSurface(object->image, NULL, SDL_GetWindowSurface(window), &target_rect);
+		int tw, th; SDL_QueryTexture(object->texture, NULL, NULL, &tw, &th);
+		SDL_Rect target_rect = {.x = object->position.x - camera.x, .y = object->position.y - camera.y, .w = tw, .h = th};
+		SDL_RenderCopy(renderer, object->texture, NULL, &target_rect);
 	}
 
-	SDL_UpdateWindowSurface(window);
+	SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char **argv) {
@@ -104,21 +108,30 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	const int width = 640;
+	const int height = 380;
+
 	SDL_Init(SDL_INIT_VIDEO);
-	SDL_Window *window = SDL_CreateWindow("FreeSki", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 380, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window *window = SDL_CreateWindow("FreeSki", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	if (window == NULL) {
 		printf("Could not create window: %s\n", SDL_GetError());
 		exit (1);
 	}
 
-	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-	struct graphics *graphics = load_original_resources("ski32.exe");
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+	if (!renderer) {
+		printf("Could not create renderer: %s\n", SDL_GetError());
+		exit(1);
+	}
+
+	SDL_RenderSetLogicalSize(renderer, width, height);
+
+	struct graphics *graphics = load_original_resources("ski32.exe", renderer);
 
 	struct game_object skier;
-	skier.position.x = 0;
-	skier.position.y = 0;
+	skier.position = (vec2){0.0, 0.0};
 	skier.next = NULL;
-	skier.image = graphics->skier_front;
+	skier.texture = graphics->skier_front;
 
 	struct game_state state = {.skier = &skier};
 
@@ -132,7 +145,7 @@ int main(int argc, char **argv) {
 		if (!update(&state)) {
 			goto quit;
 		}
-		draw(window, &state);
+		draw(renderer, &state);
 		uint32_t update_time = SDL_GetTicks() - frame_start;
 
 		// Sleep if updating/drawing is faster than needed
