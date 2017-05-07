@@ -51,6 +51,22 @@ struct game_state {
 	struct game_object *skier;
 };
 
+struct graphics *textures = NULL;
+
+SDL_Texture *skier_texture_for_velocity(vec2 velocity) {
+	if (velocity.x < -3.0) {
+		return textures->skier.left;
+	} else if (velocity.x < 0.0) {
+		return textures->skier.slightly_left;
+	} else if (velocity.x > 3.0) {
+		return textures->skier.right;
+	} else if (velocity.x > 0.0) {
+		return textures->skier.slightly_right;
+	} else {
+		return textures->skier.down;
+	}
+}
+
 bool update(struct game_state *state) {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
@@ -73,6 +89,7 @@ bool update(struct game_state *state) {
 			default:
 				break;
 			}
+			state->skier->texture = skier_texture_for_velocity(state->skier->velocity);
 		}
 	}
 
@@ -126,12 +143,15 @@ int main(int argc, char **argv) {
 
 	SDL_RenderSetLogicalSize(renderer, width, height);
 
-	struct graphics *graphics = load_original_resources("ski32.exe", renderer);
+	textures = load_original_resources("ski32.exe", renderer);
 
-	struct game_object skier;
-	skier.position = (vec2){0.0, 0.0};
-	skier.next = NULL;
-	skier.texture = graphics->skier_front;
+	struct game_object skier = {0};
+	skier.texture = textures->skier.down;
+
+	struct game_object tree = {0};
+	tree.position = (vec2){100.0, 100.0};
+	tree.texture = textures->skier.slightly_left;
+	skier.next = &tree;
 
 	struct game_state state = {.skier = &skier};
 
@@ -155,7 +175,7 @@ int main(int argc, char **argv) {
 	}
 
 quit:
-	cleanup_graphics(graphics);
+	cleanup_graphics(textures);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;

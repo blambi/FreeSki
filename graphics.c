@@ -13,24 +13,36 @@ unsigned long calculate_checksum(unsigned char *data, size_t size) {
 }
 
 /**
+ Struct that contains the address and size of bitmaps that can be
+ extracted from the original .exe-file
+ */
+struct graphics_info {
+	size_t address;
+	int width;
+	int height;
+	int bpp;
+	bool reversed;
+};
+
+/**
  Extract single image from data blob, used to get graphics from original .exe file
  */
-SDL_Surface *extract_bitmap(unsigned char *data, size_t address, int width, int height, int bbp, bool reversed) {
-	if (bbp != 4)
+SDL_Surface *extract_bitmap(unsigned char *data, struct graphics_info info) {
+	if (info.bpp != 4)
 		return NULL; // Not supported
 
 	// For some reason palette + pixels are offsetted by 40 bytes?
-	data += address + 40;
-	const int stride = (width * 4) / 8;
+	data += info.address + 40;
+	const int stride = (info.width * 4) / 8;
 
-	SDL_Surface *surface = SDL_CreateRGBSurface(0, width, height, 32, 0xFF0000, 0xFF00, 0xFF, 0);
+	SDL_Surface *surface = SDL_CreateRGBSurface(0, info.width, info.height, 32, 0xFF0000, 0xFF00, 0xFF, 0);
 	SDL_LockSurface(surface);
 
-	for (int x = 0; x < width; x++) {
-		for (int y = 0; y < height; y++) {
+	for (int x = 0; x < info.width; x++) {
+		for (int y = 0; y < info.height; y++) {
 
 			// Find pixel
-			int index = data[64 + ((reversed ? height - (y + 1) : y)) * stride + x / 2];
+			int index = data[64 + ((info.reversed ? info.height - (y + 1) : y)) * stride + x / 2];
 
 			// Extract nibble
 			if (x % 2 == 0)
@@ -48,6 +60,13 @@ SDL_Surface *extract_bitmap(unsigned char *data, size_t address, int width, int 
 
 	SDL_UnlockSurface(surface);
 	return surface;
+}
+
+SDL_Texture *load_texture(SDL_Renderer *renderer, struct graphics_info info, unsigned char *data) {
+	SDL_Surface *surface = extract_bitmap(data, info);
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
+	return texture;
 }
 
 struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
@@ -78,10 +97,13 @@ struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
 	}
 
 	graphics = malloc(sizeof(struct graphics));
-
-	SDL_Surface *skier_front = extract_bitmap(data, 0xE330, 16, 32, 4, true);
-	graphics->skier_front = SDL_CreateTextureFromSurface(renderer, skier_front);
-	SDL_FreeSurface(skier_front);
+	graphics->skier.down = load_texture(renderer, (struct graphics_info){0xE330, 16, 32, 4, true}, data);
+	graphics->skier.slightly_left = load_texture(renderer, (struct graphics_info){0xE498, 16, 32, 4, true}, data);
+	graphics->skier.left = load_texture(renderer, (struct graphics_info){0xE600, 24, 28, 4, true}, data);
+	graphics->skier.left_stopped = load_texture(renderer, (struct graphics_info){0xE7B8, 24, 28, 4, true}, data);
+	graphics->skier.slightly_right = load_texture(renderer, (struct graphics_info){0xE970, 16, 32, 4, true}, data);
+	graphics->skier.right = load_texture(renderer, (struct graphics_info){0xEAD8, 24, 28, 4, true}, data);
+	graphics->skier.right_stopped = load_texture(renderer, (struct graphics_info){0xEC90, 24, 28, 4, true}, data);
 	
 cleanup:
 	if (exe)
@@ -92,5 +114,12 @@ cleanup:
 }
 
 void cleanup_graphics(struct graphics *graphics) {
-	SDL_DestroyTexture(graphics->skier_front);
+	SDL_DestroyTexture(graphics->skier.down);
+	SDL_DestroyTexture(graphics->skier.slightly_left);
+	SDL_DestroyTexture(graphics->skier.left);
+	SDL_DestroyTexture(graphics->skier.left_stopped);
+	SDL_DestroyTexture(graphics->skier.slightly_right);
+	SDL_DestroyTexture(graphics->skier.right);
+	SDL_DestroyTexture(graphics->skier.right_stopped);
+	SDL_DestroyTexture(graphics->tree);
 }

@@ -4,7 +4,16 @@
 #include <SDL2/SDL.h>
 
 struct graphics {
-	SDL_Texture *skier_front;
+	struct {
+		SDL_Texture *down;
+		SDL_Texture *slightly_left;
+		SDL_Texture *left;
+		SDL_Texture *left_stopped;
+		SDL_Texture *slightly_right;
+		SDL_Texture *right;
+		SDL_Texture *right_stopped;
+	} skier;
+	SDL_Texture *tree;
 };
 
 /**
