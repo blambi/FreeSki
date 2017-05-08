@@ -2,6 +2,7 @@
 #define GRAPHICS_H
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 struct graphics {
 	struct {
@@ -25,6 +26,11 @@ struct graphics {
  Returns NULL if file cannot be found or is not the correct one.
  */
 struct graphics *load_original_resources(char *path, SDL_Renderer *renderer);
+/**
+ Loads image resources from an folder containing alternative graphics.
+ Returns NULL if not all files could be found.
+ */
+struct graphics *load_alternative_resources(char *path, SDL_Renderer *renderer);
 void cleanup_graphics(struct graphics *graphics);
 
 #endif

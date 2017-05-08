@@ -135,6 +135,10 @@ int main(int argc, char **argv) {
 
 	textures = load_original_resources("ski32.exe", renderer);
 
+	if (!textures) {
+		textures = load_alternative_resources("alternative", renderer);
+	}
+
 	struct game_object skier = {0};
 	struct game_state state = {.skier = &skier};
 

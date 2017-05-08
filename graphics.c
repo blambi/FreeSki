@@ -65,8 +65,24 @@ SDL_Surface *extract_bitmap(unsigned char *data, struct graphics_info info) {
 	return surface;
 }
 
-SDL_Texture *load_texture(SDL_Renderer *renderer, struct graphics_info info, unsigned char *data) {
+SDL_Texture* load_texture(SDL_Renderer *renderer, struct graphics_info info, unsigned char *data) {
 	SDL_Surface *surface = extract_bitmap(data, info);
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
+	return texture;
+}
+
+SDL_Texture *load_png_texture(SDL_Renderer *renderer, char* path, char* filename) {
+	char full_filename[256];
+	snprintf(full_filename, sizeof(full_filename), "%s/%s", path, filename);
+	printf("Loading %s\n", full_filename);
+	SDL_Surface *surface = IMG_Load(full_filename);
+
+	if (!surface) {
+		printf("Failed to load %s\n", filename);
+		return NULL;
+	}
+
 	SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
 	return texture;
@@ -119,6 +135,19 @@ cleanup:
 	if (data)
 		free(data);
 	return graphics;
+}
+
+struct graphics *load_alternative_resources(char *path, SDL_Renderer *renderer) {
+	struct graphics *graphics = NULL;
+
+	graphics = malloc(sizeof(struct graphics));
+	graphics->skier.down = load_png_texture(renderer, path, "skier_down.png");
+	graphics->skier.slightly_left = load_png_texture(renderer, path, "skier_slightly_left.png");
+	graphics->skier.left = load_png_texture(renderer, path, "skier_left.png");
+	graphics->skier.left_stopped = load_png_texture(renderer, path, "skier_left_stopped.png");
+	graphics->skier.slightly_right = load_png_texture(renderer, path, "skier_slightly_right.png");
+	graphics->skier.right = load_png_texture(renderer, path, "skier_right.png");
+	graphics->skier.right_stopped = load_png_texture(renderer, path, "skier_right_stopped.png");
 }
 
 void cleanup_graphics(struct graphics *graphics) {
