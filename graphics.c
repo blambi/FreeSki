@@ -33,7 +33,10 @@ SDL_Surface *extract_bitmap(unsigned char *data, struct graphics_info info) {
 
 	// For some reason palette + pixels are offsetted by 40 bytes?
 	data += info.address + 40;
-	const int stride = (info.width * 4) / 8;
+
+	// Images are padded to 4 byte boundaries
+	const int byte_width = (info.bpp * info.width + 7) / 8;
+	const int stride = byte_width + (byte_width % 4);
 
 	SDL_Surface *surface = SDL_CreateRGBSurface(0, info.width, info.height, 32, 0xFF0000, 0xFF00, 0xFF, 0);
 	SDL_LockSurface(surface);
@@ -91,7 +94,7 @@ struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
 
 	fread(data, 1, file_size, exe);
 
-	if (calculate_checksum(data,file_size) != 13084844L) {
+	if (calculate_checksum(data, file_size) != 13084844L) {
 		puts("Incorrect checksum for ski32.exe. Make sure you have the original 32-bit binary created 2005.");
 		goto cleanup;
 	}
@@ -108,6 +111,7 @@ struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
 	graphics->stump = load_texture(renderer, (struct graphics_info){0x13728, 16, 11, 4, true}, data);
 	graphics->small_hump = load_texture(renderer, (struct graphics_info){0x409, 16, 4, 4, true}, data);
 	graphics->large_hump = load_texture(renderer, (struct graphics_info){0x13870, 24, 8, 4, true}, data);
+	graphics->tree = load_texture(renderer, (struct graphics_info){0x13938, 28, 32, 4, true}, data);
 	
 cleanup:
 	if (exe)

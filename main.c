@@ -31,7 +31,7 @@ static inline SDL_Texture *skier_texture_for_velocity(vec2 velocity) {
 static inline SDL_Texture *texture_for_object_type(enum object_type type) {
 	switch (type) {
 	case TREE:
-		return textures->skier.right_stopped;
+		return textures->tree;
 	case ROCK:
 		return textures->rock;
 	case STUMP:
