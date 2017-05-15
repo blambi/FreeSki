@@ -3,8 +3,8 @@
 #include <tgmath.h>
 
 // Areas are rectangular. This is the length of a side of the rectangle
-const float AREA_SIZE = 600.0;
-const int AREA_CACHE_COUNT = 10;
+#define AREA_SIZE 600.0
+#define AREA_CACHE_COUNT 10
 
 struct game_area *area_cache[AREA_CACHE_COUNT];
 

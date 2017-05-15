@@ -21,7 +21,7 @@ struct game_object {
 	struct game_object *next;
 };
 
-static const int AREA_OBJECT_COUNT = 20;
+#define AREA_OBJECT_COUNT 20
 
 struct game_area {
 	int x;
