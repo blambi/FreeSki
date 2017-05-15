@@ -104,6 +104,10 @@ struct graphics *load_original_resources(char *path, SDL_Renderer *renderer) {
 	graphics->skier.slightly_right = load_texture(renderer, (struct graphics_info){0xE970, 16, 32, 4, true}, data);
 	graphics->skier.right = load_texture(renderer, (struct graphics_info){0xEAD8, 24, 28, 4, true}, data);
 	graphics->skier.right_stopped = load_texture(renderer, (struct graphics_info){0xEC90, 24, 28, 4, true}, data);
+	graphics->rock = load_texture(renderer, (struct graphics_info){0x13638, 23, 11, 4, true}, data);
+	graphics->stump = load_texture(renderer, (struct graphics_info){0x13728, 16, 11, 4, true}, data);
+	graphics->small_hump = load_texture(renderer, (struct graphics_info){0x409, 16, 4, 4, true}, data);
+	graphics->large_hump = load_texture(renderer, (struct graphics_info){0x13870, 24, 8, 4, true}, data);
 	
 cleanup:
 	if (exe)

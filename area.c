@@ -1,4 +1,5 @@
 #include "area.h"
+#include <stdlib.h>
 #include <tgmath.h>
 
 // Areas are rectangular. This is the length of a side of the rectangle
@@ -88,6 +89,7 @@ struct game_area *generate_area(int x, int y) {
 		struct game_object *object = &area->objects[i];
 		*object = (struct game_object){0};
 		object->position = (vec2){(double)rand() / (double)RAND_MAX * AREA_SIZE + (x * AREA_SIZE), (double)rand() / (double)RAND_MAX * AREA_SIZE + (y * AREA_SIZE)};
+		object->type = rand() % OBJECT_TYPE_COUNT;
 		if (previous)
 			previous->next = object;
 		previous = object;

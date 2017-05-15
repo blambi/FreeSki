@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <SDL2/SDL.h>
 #include "graphics.h"
 #include "area.h"
 
@@ -13,7 +14,7 @@ struct game_state {
 
 struct graphics *textures = NULL;
 
-SDL_Texture *skier_texture_for_velocity(vec2 velocity) {
+static inline SDL_Texture *skier_texture_for_velocity(vec2 velocity) {
 	if (velocity.x < -3.0) {
 		return textures->skier.left;
 	} else if (velocity.x < 0.0) {
@@ -24,6 +25,23 @@ SDL_Texture *skier_texture_for_velocity(vec2 velocity) {
 		return textures->skier.slightly_right;
 	} else {
 		return textures->skier.down;
+	}
+}
+
+static inline SDL_Texture *texture_for_object_type(enum object_type type) {
+	switch (type) {
+	case TREE:
+		return textures->skier.right_stopped;
+	case ROCK:
+		return textures->rock;
+	case STUMP:
+		return textures->stump;
+	case SMALL_HUMP:
+		return textures->small_hump;
+	case LARGE_HUMP:
+		return textures->large_hump;
+	default:
+		return NULL;
 	}
 }
 
@@ -49,7 +67,6 @@ bool update(struct game_state *state) {
 			default:
 				break;
 			}
-			state->skier->texture = skier_texture_for_velocity(state->skier->velocity);
 		}
 	}
 
@@ -70,18 +87,20 @@ void draw(SDL_Renderer *renderer, struct game_state *state) {
 	camera = vec2_subtract(state->skier->position, camera);
 
 	// Render skier
-	int tw, th; SDL_QueryTexture(state->skier->texture, NULL, NULL, &tw, &th);
+	SDL_Texture *texture = skier_texture_for_velocity(state->skier->velocity);
+	int tw, th; SDL_QueryTexture(texture, NULL, NULL, &tw, &th);
 	SDL_Rect target_rect = {.x = state->skier->position.x - camera.x, .y = state->skier->position.y - camera.y, .w = tw, .h = th};
-	SDL_RenderCopy(renderer, state->skier->texture, NULL, &target_rect);
+	SDL_RenderCopy(renderer, texture, NULL, &target_rect);
 
 	// Render visible areas
 	struct list_node *areas = get_visible_areas(camera.x, camera.y, width, height);
 	for (struct list_node *node = areas; node != NULL; node = node->next) {
 		struct game_area *area = node->object;
 		for (struct game_object *object = area->objects; object != NULL; object = object->next) {
-			int tw, th; SDL_QueryTexture(textures->skier.right_stopped, NULL, NULL, &tw, &th);
+			SDL_Texture *texture = texture_for_object_type(object->type);
+			int tw, th; SDL_QueryTexture(texture, NULL, NULL, &tw, &th);
 			SDL_Rect target_rect = {.x = object->position.x - camera.x, .y = object->position.y - camera.y, .w = tw, .h = th};
-			SDL_RenderCopy(renderer, textures->skier.right_stopped, NULL, &target_rect);
+			SDL_RenderCopy(renderer, texture, NULL, &target_rect);
 		}
 	}
 	free_list(areas, false);
@@ -117,7 +136,6 @@ int main(int argc, char **argv) {
 	textures = load_original_resources("ski32.exe", renderer);
 
 	struct game_object skier = {0};
-	skier.texture = textures->skier.down;
 	struct game_state state = {.skier = &skier};
 
 	// Main game loop

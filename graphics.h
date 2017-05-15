@@ -14,6 +14,10 @@ struct graphics {
 		SDL_Texture *right_stopped;
 	} skier;
 	SDL_Texture *tree;
+	SDL_Texture *rock;
+	SDL_Texture *stump;
+	SDL_Texture *small_hump;
+	SDL_Texture *large_hump;
 };
 
 /**

@@ -1,12 +1,21 @@
 #ifndef AREA_H
 #define AREA_H
 
-#include <SDL2/SDL.h>
 #include <stdbool.h>
-#include "vec2.h"
+#include "geometry.h"
+
+enum object_type {
+	SKIER,
+	TREE,
+	STUMP,
+	ROCK,
+	SMALL_HUMP,
+	LARGE_HUMP,
+	OBJECT_TYPE_COUNT
+};
 
 struct game_object {
-	SDL_Texture *texture;
+	enum object_type type;
 	vec2 position;
 	vec2 velocity;
 	struct game_object *next;
