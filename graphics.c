@@ -148,6 +148,12 @@ struct graphics *load_alternative_resources(char *path, SDL_Renderer *renderer) 
 	graphics->skier.slightly_right = load_png_texture(renderer, path, "skier_slightly_right.png");
 	graphics->skier.right = load_png_texture(renderer, path, "skier_right.png");
 	graphics->skier.right_stopped = load_png_texture(renderer, path, "skier_right_stopped.png");
+
+	graphics->rock = load_png_texture(renderer, path, "rock.png");
+	graphics->stump = load_png_texture(renderer, path, "stump.png");
+	graphics->small_hump = load_png_texture(renderer, path, "small_hump.png");
+	graphics->large_hump = load_png_texture(renderer, path, "large_hump.png");
+
 }
 
 void cleanup_graphics(struct graphics *graphics) {
