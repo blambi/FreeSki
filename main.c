@@ -47,22 +47,31 @@ static inline SDL_Texture *texture_for_object_type(enum object_type type) {
 
 bool update(struct game_state *state) {
 	SDL_Event event;
+
+	if (state->skier->velocity.y < 0.0) {
+			state->skier->velocity.y += 0.5;
+	} else if (state->skier->velocity.y < 1.0 && state->skier->velocity.x > 0.0) {
+			state->skier->velocity.x -= 0.25;
+	} else if (state->skier->velocity.y < 1.0 && state->skier->velocity.x < 0.0) {
+			state->skier->velocity.x += 0.25;
+	}
+
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT) {
 			return false;
 		} else if (event.type == SDL_KEYDOWN) {
 			switch (event.key.keysym.sym) {
 			case SDLK_RIGHT:
-				state->skier->velocity.x += 2.0;
+				state->skier->velocity.x = fmin(state->skier->velocity.x + 2.0, 10.0);
 				break;
 			case SDLK_LEFT:
-				state->skier->velocity.x -= 2.0;
+				state->skier->velocity.x = fmax(state->skier->velocity.x - 2.0, -10.0);
 				break;
 			case SDLK_UP:
-				state->skier->velocity.y -= 2.0;
+				state->skier->velocity.y = fmax(state->skier->velocity.y - 2.0, -4.0);
 				break;
 			case SDLK_DOWN:
-				state->skier->velocity.y += 2.0;
+				state->skier->velocity.y = fmin(state->skier->velocity.y + 2.0, 10.0);
 				break;
 			default:
 				break;
@@ -70,7 +79,7 @@ bool update(struct game_state *state) {
 		}
 	}
 
-	state->skier->position = vec2_add(state->skier->position, state->skier->velocity);	
+	state->skier->position = vec2_add(state->skier->position, state->skier->velocity);
 	return true;
 }
 
@@ -82,7 +91,7 @@ void draw(SDL_Renderer *renderer, struct game_state *state) {
 	SDL_RenderGetLogicalSize(renderer, &width, &height);
 
 	vec2 camera = {.x = (float)width / 2.0, .y = (float)height / 2.0};
-	
+
 	// Put center of camera above skier
 	camera = vec2_subtract(state->skier->position, camera);
 
