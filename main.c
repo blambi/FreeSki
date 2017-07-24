@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 #include "graphics.h"
 #include "area.h"
+#include "lua_api.h"
 
 struct game_state {
 	struct game_object *skier;
@@ -51,22 +52,23 @@ bool update(struct game_state *state) {
 		if (event.type == SDL_QUIT) {
 			return false;
 		} else if (event.type == SDL_KEYDOWN) {
-			switch (event.key.keysym.sym) {
-			case SDLK_RIGHT:
-				state->skier->velocity.x += 2.0;
-				break;
-			case SDLK_LEFT:
-				state->skier->velocity.x -= 2.0;
-				break;
-			case SDLK_UP:
-				state->skier->velocity.y -= 2.0;
-				break;
-			case SDLK_DOWN:
-				state->skier->velocity.y += 2.0;
-				break;
-			default:
-				break;
-			}
+			lua_on_keydown(event.key.keysym.sym);
+			/* switch (event.key.keysym.sym) { */
+			/* case SDLK_RIGHT: */
+			/* 	state->skier->velocity.x += 2.0; */
+			/* 	break; */
+			/* case SDLK_LEFT: */
+			/* 	state->skier->velocity.x -= 2.0; */
+			/* 	break; */
+			/* case SDLK_UP: */
+			/* 	state->skier->velocity.y -= 2.0; */
+			/* 	break; */
+			/* case SDLK_DOWN: */
+			/* 	state->skier->velocity.y += 2.0; */
+			/* 	break; */
+			/* default: */
+			/* 	break; */
+			/* } */
 		}
 	}
 
@@ -145,6 +147,7 @@ int main(int argc, char **argv) {
 	// Main game loop
 	const int FPS = 60;
 	const int MS_PER_FRAME = 1000 / FPS;
+	init_lua("freeski.lua");
 
 	while (1) {
 		uint32_t frame_start = SDL_GetTicks();
@@ -161,8 +164,15 @@ int main(int argc, char **argv) {
 	}
 
 quit:
+	cleanup_lua();
 	cleanup_graphics(textures);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
+}
+
+void skier_update_velocity(double x, double y) {
+		// A bit hackish?
+		state->skier->velocity.x = x;
+		state->skier->velocity.y = y;
 }
